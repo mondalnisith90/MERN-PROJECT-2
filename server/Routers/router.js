@@ -16,15 +16,41 @@ router.get("/about", (req, res) => {
 });
 
 
-router.get("/contact", (req, res) => {
-    res.status(200).send("Contact us page");
+router.get("/users/data", userAuth,  (req, res) => {
+    // console.log(req.email, req.firstName, req.lastName);
+    const userData = {firstName: req.firstName, lastName: req.lastName, email: req.email}
+    res.status(200).json(userData);
+});
+
+
+router.post("/users/message", userAuth, async (req, res) => {
+    try {
+        const {firstName, lastName, email, message} = req.body;
+        if(!firstName || !lastName || !email || !message){
+            res.status(422).json("Please fill the input fields properly");
+        }else if(req.email != email.trim()){
+            res.status(400).json("Invalid email address. Reason: may be you are a new user or you are login with anthor email address");
+        }else{
+            //now all ok. Simply store message of this user in database
+            const messageObj = {message: message, date:  new Date()};
+            const dbResponse = await User.findByIdAndUpdate(req.userId, {$push: {messages: messageObj}});
+            if(dbResponse){
+                res.status(200).json("Message send successfully.");
+            }else{
+                res.status(400).json("Message can not send.");
+            }
+        }
+    } catch (error) {
+        res.status(400).json(error.message);
+    }
+
 });
 
 //User Registration
 router.post("/users/signin", async (req, res) => {
     try{
-        const {name, phone, email, password, cpassword} = req.body;
-        if(!name || !phone || !email || !password || !cpassword){
+        const {firstName, lastName, phone, email, password, cpassword} = req.body;
+        if(!firstName || !lastName || !phone || !email || !password || !cpassword){
             //input fields not fills properly by user
             res.status(422).json("Please fill the input fields properly");
         }else if(password != cpassword){
@@ -34,15 +60,18 @@ router.post("/users/signin", async (req, res) => {
             let dbresponse = await User.findOne({email});
             if(dbresponse){
                 //email id is already exist in db
-                throw new Error("This email address is already exists");
-             }else{
-            //email not present in db
+                throw new Error("The email address is already exists");
+             }
+             dbresponse = await User.findOne({phone});
+             if(dbresponse){
+                 //Phone number already exist in db
+                 throw new Error("The phone number is already exists"); 
+             }
             //All ok now save this user data to our database
-            const newUser = new User({name, phone, email, password});
+            const newUser = new User({firstName, lastName, phone, email, password});
             //call a middleware pre for password hashing 
             dbresponse = await newUser.save();
-            res.status(201).json("User registration successfull");
-          }       
+            res.status(201).json("User registration successfull");   
         }
     }catch(error){
         res.status(400).json("Failed to register : "+error.message);
