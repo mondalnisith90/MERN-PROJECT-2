@@ -5,15 +5,15 @@ const bcrypt = require("bcryptjs");
 const userAuth = require("../UserAuthentication/userAuth");
 
 
-router.get("/", async (req, res) => {
-    res.status(200).send("Hello from HOME");
-});
+// router.get("/", async (req, res) => {
+//     res.status(200).send("Hello from HOME");
+// });
 
 
 
-router.get("/about", (req, res) => {
-    res.status(200).send("About page");
-});
+// router.get("/about", (req, res) => {
+//     res.status(200).send("About page");
+// });
 
 
 router.get("/users/data", userAuth,  (req, res) => {
@@ -110,6 +110,11 @@ router.post("/users/login", async (req, res) => {
         res.status(400).json("User login error");
     }
 
+});
+
+router.get("/users/logout", userAuth, (req, res) => {
+    res.clearCookie("userKey");
+    res.status(200).json("User logout successfully");
 });
 
 
